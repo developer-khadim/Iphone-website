@@ -30,7 +30,8 @@ const VideoCarousel = () => {
       }
     }
   }, [startPlay, videoId, isPlaying, loadedData]);
-const handleLoaderMetadata = (i ,e) => setLoadedData ((prev) => [...prev ,e] ) 
+
+  const handleLoaderMetadata = (i, e) => setLoadedData((prev) => [...prev, e]);
 
   useEffect(() => {
     const currentProgress = 0;
@@ -44,52 +45,82 @@ const handleLoaderMetadata = (i ,e) => setLoadedData ((prev) => [...prev ,e] )
       });
     }
   }, [videoId, startPlay]);
-  useGSAP(() =>{
-    gsap.to('#video'  ,{
-      scrollTrigger:{
-        trigger: '#video',
-        toggleActions: 'restart none none none'
+
+  useGSAP(() => {
+    gsap.to("#video", {
+      scrollTrigger: {
+        trigger: "#video",
+        toggleActions: "restart none none none",
       },
-      onComplete: () =>{
-        setVideo((prev) =>({
+      onComplete: () => {
+        setVideo((prev) => ({
           ...prev,
-          startPlay:true,
-          isPlaying:true
-        }) )
-      }
-    } , [ isEnd ,videoId ])
-  } )
+          startPlay: true,
+          isPlaying: true,
+        }));
+      },
+    });
+  }, [isEnd, videoId]);
 
   const handleProcess = (type, i) => {
     switch (type) {
-      case 'video-end':
+      case "video-end":
         setVideo((prev) => ({
-          ...prev, isEnd: true, videoId: i + 1
+          ...prev,
+          isEnd: true,
+          videoId: i + 1,
         }));
         break;
 
-      case 'video-last':
+      case "video-last":
         setVideo((prev) => ({
-          ...prev, isLastVideo: true
+          ...prev,
+          isLastVideo: true,
         }));
         break;
 
-      case 'video-reset':
+      case "video-reset":
         setVideo((prev) => ({
-          ...prev, isLastVideo: false, videoId: 0
+          ...prev,
+          isLastVideo: false,
+          videoId: 0,
         }));
         break;
 
-      case 'play':
+      case "play":
         setVideo((prev) => ({
-          ...prev, isPlaying: !prev.isPlaying
+          ...prev,
+          isPlaying: !prev.isPlaying,
         }));
         break;
 
       default:
         break;
     }
-  }
+  };
+
+  useEffect(() => {
+    if (isPlaying) {
+      const currentVideo = videoRef.current[videoId];
+      const handleEnded = () => {
+        if (videoId < videoRef.current.length - 1) {
+          setVideo((prev) => ({
+            ...prev,
+            videoId: videoId + 1,
+          }));
+        } else {
+          setVideo((prev) => ({
+            ...prev,
+            isLastVideo: true,
+          }));
+        }
+      };
+      currentVideo.addEventListener("ended", handleEnded);
+      return () => {
+        currentVideo.removeEventListener("ended", handleEnded);
+      };
+    }
+  }, [isPlaying, videoId]);
 
   return (
     <>
@@ -110,7 +141,13 @@ const handleLoaderMetadata = (i ,e) => setLoadedData ((prev) => [...prev ,e] )
                       isPlaying: true,
                     }));
                   }}
-                  onLoadedMetadata={ (e) => handleLoaderMetadata(i,e) }
+                  onPause={() => {
+                    setVideo((prevVideo) => ({
+                      ...prevVideo,
+                      isPlaying: false,
+                    }));
+                  }}
+                  onLoadedMetadata={(e) => handleLoaderMetadata(i, e)}
                 >
                   <source src={list.video} type="video/mp4" />
                 </video>
@@ -142,13 +179,16 @@ const handleLoaderMetadata = (i ,e) => setLoadedData ((prev) => [...prev ,e] )
             </span>
           ))}
         </div>
-        <button className="control-btn" onClick={
-          isLastVideo
-            ? () => handleProcess("video-reset")
-            : !isPlaying
-            ? () => handleProcess("play")
-            : () => handleProcess("pause")
-        }>
+        <button
+          className="control-btn"
+          onClick={
+            isLastVideo
+              ? () => handleProcess("video-reset")
+              : !isPlaying
+              ? () => handleProcess("play")
+              : () => handleProcess("pause")
+          }
+        >
           <img
             src={isLastVideo ? replayImg : !isPlaying ? playImg : pauseImg}
             alt={isLastVideo ? "replay " : !isPlaying ? "play" : "pause"}
